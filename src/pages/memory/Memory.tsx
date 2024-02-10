@@ -1,95 +1,81 @@
 import { useState } from "react";
+import "./Memory.css";
+import { Game, MemoryRecord } from "./components/MemoryGame";
 
-export type MemoryRecord = {
-  id: string;
-  name: string;
-  visible: boolean;
-  solved: boolean;
-  wrong: boolean;
-};
+const imageImports = import.meta.glob<{ default: string }>(
+  "./assets/tiles/*.png",
+  { eager: true }
+);
 
-export function Memory(memory: { data: MemoryRecord[] }) {
-  const [firstPicked, setFirstPicked] = useState<MemoryRecord>();
-  const [secondPicked, setSecondPicked] = useState<MemoryRecord>();
+function createMemorySet(): MemoryRecord[] {
+  const imagePaths = Object.values(imageImports).map((val) => val.default);
+  const memory = [...imagePaths, ...imagePaths];
+  shuffleArray(memory);
+
+  return memory.map((m) => {
+    return {
+      id: crypto.randomUUID(),
+      name: m,
+      visible: false,
+      solved: false,
+      wrong: false,
+    };
+  });
+}
+
+function Memory() {
+  const [memorySet, setMemory] = useState<MemoryRecord[]>(createMemorySet);
 
   return (
-    <div className="grid">
-      {memory.data.map((val) => {
-        return (
-          <div
-            key={val.id}
-            onClick={() => {
-              if (firstPicked && secondPicked) {
-                resetVisibility(firstPicked);
-                resetVisibility(secondPicked);
-
-                setFirstPicked(undefined);
-                setSecondPicked(undefined);
-
-                return;
-              }
-
-              if (val.solved) {
-                return;
-              }
-
-              if (firstPicked == val) {
-                return;
-              }
-
-              val.visible = true;
-
-              if (!firstPicked) {
-                setFirstPicked(val);
-                return;
-              }
-
-              if (isPair(firstPicked, val)) {
-                firstPicked.solved = true;
-                val.solved = true;
-
-                setFirstPicked(undefined);
-                setSecondPicked(undefined);
-              } else {
-                firstPicked.wrong = true;
-                val.wrong = true;
-
-                setSecondPicked(val);
-              }
-            }}
-            className={getMemoryClasses(val)}
-          >
-            {(val.visible || val.solved) && (
-              <img className="memory-img" src={val.name} alt={val.name} />
-            )}
-          </div>
-        );
-      })}
-    </div>
+    <>
+      <h1>Memory</h1>
+      <button
+        className="success"
+        onClick={() => setMemory((prev) => solve(prev))}
+      >
+        Solve
+      </button>
+      <button className="primary" onClick={() => setMemory(createMemorySet)}>
+        New Game
+      </button>
+      <button
+        className="danger"
+        onClick={() => setMemory((prev) => reset(prev))}
+      >
+        Reset
+      </button>
+      <Game data={memorySet}></Game>
+    </>
   );
 }
 
-function isPair(first: MemoryRecord, second: MemoryRecord): boolean {
-  return first.name == second.name;
+function solve(records: MemoryRecord[]): MemoryRecord[] {
+  return records.map((memoryRecord) => {
+    return {
+      ...memoryRecord,
+      visible: false,
+      solved: true,
+      wrong: false,
+    };
+  });
 }
 
-function resetVisibility(mem: MemoryRecord) {
-  mem.visible = false;
-  mem.wrong = false;
+function reset(records: MemoryRecord[]): MemoryRecord[] {
+  return records.map((memoryRecord) => {
+    return {
+      ...memoryRecord,
+      visible: false,
+      solved: false,
+      wrong: false,
+    };
+  });
 }
 
-function getMemoryClasses(mem: MemoryRecord): string {
-  const classNames: string[] = ["tile"];
-  if (mem.solved) {
-    classNames.push("solved");
-  } else if (mem.wrong) {
-    classNames.push("wrong");
-    classNames.push("horizontal-shake");
-  } else if (!mem.visible) {
-    classNames.push("hidden");
-  } else {
-    classNames.push("neutral");
+function shuffleArray(array: string[]) {
+  for (let i = array.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [array[i], array[j]] = [array[j], array[i]];
   }
-
-  return classNames.join(" ");
 }
+
+export default Memory;
