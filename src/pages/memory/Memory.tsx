@@ -1,13 +1,27 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import "./Memory.css";
+
+interface MemoryRecord {
+  id: string;
+  name: string;
+  visible: boolean;
+  solved: boolean;
+  wrong: boolean;
+}
+
+interface Timer {
+  StartDate: number;
+  EndDate: number;
+  IsRunning: boolean;
+}
 
 const imageImports = import.meta.glob<{ default: string }>(
   "./assets/tiles/*.png",
   { eager: true }
 );
+const imagePaths = Object.values(imageImports).map((val) => val.default);
 
 function createMemorySet(): MemoryRecord[] {
-  const imagePaths = Object.values(imageImports).map((val) => val.default);
   const memory = [...imagePaths, ...imagePaths];
   shuffleArray(memory);
 
@@ -22,36 +36,34 @@ function createMemorySet(): MemoryRecord[] {
   });
 }
 
-type MemoryRecord = {
-  id: string;
-  name: string;
-  visible: boolean;
-  solved: boolean;
-  wrong: boolean;
-};
-
-interface Timer {
-  StartDate: number
-  EndDate: number
-  IsRunning: boolean
-}
-
 function Memory() {
   const [memorySet, setMemory] = useState<MemoryRecord[]>(createMemorySet);
-  const [timer, setTimer] = useState<Timer>(() => { return { StartDate: 0, EndDate: 0, IsRunning: false } })
-  const [clock, setClock] = useState<number>(0)
+  const [timer, setTimer] = useState<Timer>(() => {
+    return { StartDate: 0, EndDate: 0, IsRunning: false };
+  });
   const [firstPicked, setFirstPicked] = useState<MemoryRecord>();
   const [secondPicked, setSecondPicked] = useState<MemoryRecord>();
 
+  const timerRef = useRef(timer);
+  timerRef.current = timer;
+
   useEffect(() => {
-    const intervalId = setInterval(() => { setClock(Date.now()) }, 1000);
-    return () => { clearInterval(intervalId); };
+    const intervalId = setInterval(() => {
+      if (timerRef.current.IsRunning) {
+        setTimer((prev) => {
+          return { ...prev, EndDate: Date.now() };
+        });
+      }
+    }, 1000);
+    return () => {
+      clearInterval(intervalId);
+    };
   }, []);
 
   function resetGame() {
-    setTimer({ StartDate: 0, EndDate: 0, IsRunning: false })
-    setFirstPicked(undefined)
-    setSecondPicked(undefined)
+    setTimer({ StartDate: 0, EndDate: 0, IsRunning: false });
+    setFirstPicked(undefined);
+    setSecondPicked(undefined);
   }
 
   function resetPicks() {
@@ -68,108 +80,115 @@ function Memory() {
     }
   }
 
+  function onClickMemoryTile(record: MemoryRecord) {
+    if (!timer.IsRunning) {
+      setTimer({ StartDate: Date.now(), IsRunning: true, EndDate: Date.now() });
+    }
+
+    if (firstPicked && secondPicked) {
+      resetPicks();
+      return;
+    }
+
+    if (record.solved) {
+      return;
+    }
+
+    if (firstPicked == record) {
+      return;
+    }
+
+    record.visible = true;
+
+    if (!firstPicked) {
+      setFirstPicked(record);
+      return;
+    }
+
+    if (!isPair(firstPicked, record)) {
+      firstPicked.wrong = true;
+      record.wrong = true;
+
+      setSecondPicked(record);
+      return;
+    }
+
+    firstPicked.solved = true;
+    record.solved = true;
+    resetPicks();
+
+    if (isSolved(memorySet)) {
+      setTimer((prev) => {
+        return { ...prev, EndDate: Date.now(), IsRunning: false };
+      });
+    }
+  }
+
   return (
     <>
       <h1>Memory</h1>
       <button
         className="success"
         onClick={() => {
-          resetGame()
-          setMemory((prev) => solve(prev))
+          resetGame();
+          setMemory((prev) => solve(prev));
         }}
       >
         Solve
       </button>
-      <button className="primary" onClick={() => {
-        resetGame()
-        setMemory(createMemorySet)
-      }
-      }>
+      <button
+        className="primary"
+        onClick={() => {
+          resetGame();
+          setMemory(createMemorySet);
+        }}
+      >
         New Game
       </button>
       <button
         className="danger"
         onClick={() => {
-          resetGame()
-          setMemory((prev) => reset(prev))
+          resetGame();
+          setMemory((prev) => reset(prev));
         }}
       >
         Reset
       </button>
       <br />
-      <Timer timer={timer} clock={clock} />
+      <Timer timer={timer} /> Seconds
 
       <br />
       <div className="grid">
-      {memorySet.map((val) => {
-        return (
-          <div
-            key={val.id}
-            onClick={() => {
-              if (!timer.IsRunning) {
-                setTimer(prev => { return { ...prev, StartDate: Date.now(), IsRunning: true } })
-              }
-
-              if (firstPicked && secondPicked) {
-                resetPicks()
-                return
-              }
-
-              if (val.solved) {
-                return;
-              }
-
-              if (firstPicked == val) {
-                return;
-              }
-
-              val.visible = true;
-
-              if (!firstPicked) {
-                setFirstPicked(val);
-                return;
-              }
-
-              if (isPair(firstPicked, val)) {
-                firstPicked.solved = true;
-                val.solved = true;
-
-                resetPicks()
-              } else {
-                firstPicked.wrong = true;
-                val.wrong = true;
-
-                setSecondPicked(val);
-              }
-
-              if (isSolved(memorySet)) {
-                setTimer(prev => { return { ...prev, EndDate: Date.now(), IsRunning: false } })
-              }
-            }}
-            className={getMemoryClasses(val)}
-          >
-            {(val.visible || val.solved) && (
-              <img className="memory-img" src={val.name} alt={val.name} />
-            )}
-          </div>
-        );
-      })}
-    </div>
+        {memorySet.map((val) => {
+          return (
+            <div
+              key={val.id}
+              onClick={() => {
+                onClickMemoryTile(val);
+              }}
+              className={getMemoryClasses(val)}
+            >
+              {(val.visible || val.solved) && (
+                <img className="memory-img" src={val.name} alt={val.name} />
+              )}
+            </div>
+          );
+        })}
+      </div>
     </>
   );
 }
 
-function Timer(data: { timer: Timer, clock: number }) {
-  let time
-  if (data.timer.IsRunning && data.timer.StartDate > 0) {
-    time = data.clock - data.timer.StartDate
-  } else if (data.timer.IsRunning || (data.timer.EndDate < 0 && data.timer.StartDate < 0)) {
-    time = 0
+function Timer({ timer }: { timer: Timer}) {
+  let time;
+
+  if (timer.EndDate == 0 || timer.StartDate == 0) {
+    time = 0;
   } else {
-    time = data.timer.EndDate - data.timer.StartDate
+    time = timer.EndDate - timer.StartDate;
   }
 
-  return <span>{Math.ceil(time / 1000)}</span>
+  return <span>{Math.ceil(time / 1000)}</span>;
 }
 
 function solve(records: MemoryRecord[]): MemoryRecord[] {
@@ -205,8 +224,8 @@ function isPair(first: MemoryRecord, second: MemoryRecord): boolean {
   return first.name == second.name;
 }
 
-function isSolved(mem: MemoryRecord[]): boolean{
-  return !mem.some((val) => !val.solved)
+function isSolved(mem: MemoryRecord[]): boolean {
+  return !mem.some((val) => !val.solved);
 }
 
 function getMemoryClasses(mem: MemoryRecord): string {
@@ -224,6 +243,5 @@ function getMemoryClasses(mem: MemoryRecord): string {
 
   return classNames.join(" ");
 }
-
 
 export default Memory;
