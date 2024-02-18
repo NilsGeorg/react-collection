@@ -1,12 +1,14 @@
-import { Link } from "react-router-dom";
+export { Page }
 
-export default function IndexPage() {
-    return <div>
+function Page() {
+  return (
+     <div>
         <h1>Welcome to this place</h1>
         <p>This web space is an ongoing work in progress. Feel free to take look around!</p>
 
-        <Link to={'memory'}> To Memory Game</Link>
+        <a href="/memory"> To Memory Game</a>
 
         
     </div>
+  )
 }

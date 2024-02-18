@@ -1,13 +1,12 @@
 @font-face {
   font-family: BodoAmat;
-  src: url(assets/fonts/bodo_amat/BodoAmat.ttf) format("truetype");
+  src: url(/fonts/bodo_amat/BodoAmat.ttf) format("truetype");
 }
 
 @font-face {
   font-family: EspressoShow;
-  src: url(assets/fonts/espresso_show/EspressoShow.ttf) format("truetype");
+  src: url(/fonts/espresso_show/EspressoShow.ttf) format("truetype");
 }
-
 
 :root {
   font-family: BodoAmat, Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
@@ -28,8 +27,14 @@
   --success: #8cb840;
 }
 
+* {
+    font-size: 100%;
+    font-family: BodoAmat, Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+   }
+   
+
 h1 {
-  font-family: EspressoShow, Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  font-family: EspressoShow
 }
 
 a {

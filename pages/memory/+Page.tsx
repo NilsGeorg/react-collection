@@ -125,7 +125,7 @@ function Memory() {
   }
 
   return (
-    <>
+    <div id="memory">
       <h1>Memory</h1>
       <button
         className="success"
@@ -175,7 +175,7 @@ function Memory() {
           );
         })}
       </div>
-    </>
+    </div>
   );
 }
 
