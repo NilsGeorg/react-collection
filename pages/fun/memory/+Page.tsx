@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import "./Memory.css";
+import "./memory.scss";
+import backgroundImg from './assets/background.jpg'
 
 interface MemoryRecord {
   id: string;
@@ -16,7 +17,7 @@ interface Timer {
 }
 
 const imageImports = import.meta.glob<{ default: string }>(
-  "./assets/tiles/*.png",
+  "./assets/tiles/n*.png",
   { eager: true }
 );
 const imagePaths = Object.values(imageImports).map((val) => val.default);
@@ -125,40 +126,48 @@ function Memory() {
   }
 
   return (
-    <div id="memory">
+    <div id="memory" className="fun-font container text-center">
       <h1>Memory</h1>
-      <button
-        className="success"
-        onClick={() => {
-          resetGame();
-          setMemory((prev) => solve(prev));
-        }}
-      >
-        Solve
-      </button>
-      <button
-        className="primary"
-        onClick={() => {
-          resetGame();
-          setMemory(createMemorySet);
-        }}
-      >
-        New Game
-      </button>
-      <button
-        className="danger"
-        onClick={() => {
-          resetGame();
-          setMemory((prev) => reset(prev));
-        }}
-      >
-        Reset
-      </button>
-      <br />
-      <Timer timer={timer} /> Seconds
+      <div className="row justify-content-center">
+        <div className="col">
+          <button
+            className="btn btn-success text-white m-1"
+            onClick={() => {
+              resetGame();
+              setMemory((prev) => solve(prev));
+            }}
+          >
+            Solve
+          </button>
 
-      <br />
-      <div className="grid">
+          <button
+            className="btn btn-primary m-1"
+            onClick={() => {
+              resetGame();
+              setMemory(createMemorySet);
+            }}
+          >
+            New Game
+          </button>
+          <button
+            className="btn btn-danger m-1"
+            onClick={() => {
+              resetGame();
+              setMemory((prev) => reset(prev));
+            }}
+          >
+            Reset
+          </button>
+        </div>
+      </div>
+
+      <div className="row justify-content-center">
+        <div className="col">
+          <Timer timer={timer} /> Seconds
+        </div>
+      </div>
+
+      <div className="row justify-content-center">
         {memorySet.map((val) => {
           return (
             <div
@@ -166,11 +175,10 @@ function Memory() {
               onClick={() => {
                 onClickMemoryTile(val);
               }}
-              className={getMemoryClasses(val)}
-            >
-              {(val.visible || val.solved) && (
-                <img className="memory-img" src={val.name} alt={val.name} />
-              )}
+              className="col-md-2 col-3 p-1"
+              >
+              
+              <Tile  mem={val}/>
             </div>
           );
         })}
@@ -179,7 +187,26 @@ function Memory() {
   );
 }
 
-function Timer({ timer }: { timer: Timer}) {
+function Tile({ mem }: { mem: MemoryRecord }) {
+  let img = backgroundImg
+  if (mem.visible || mem.solved) {
+    img = mem.name
+  } 
+
+  let className = "img-fluid" 
+
+  if (mem.solved) {
+    className += " mem-success";
+  } 
+  
+  if (mem.wrong) {
+    className += " mem-fail";
+  } 
+
+  return <img src={img} className={className} />
+}
+
+function Timer({ timer }: { timer: Timer }) {
   let time;
 
   if (timer.EndDate == 0 || timer.StartDate == 0) {
@@ -226,22 +253,6 @@ function isPair(first: MemoryRecord, second: MemoryRecord): boolean {
 
 function isSolved(mem: MemoryRecord[]): boolean {
   return !mem.some((val) => !val.solved);
-}
-
-function getMemoryClasses(mem: MemoryRecord): string {
-  const classNames: string[] = ["tile"];
-  if (mem.solved) {
-    classNames.push("solved");
-  } else if (mem.wrong) {
-    classNames.push("wrong");
-    classNames.push("horizontal-shake");
-  } else if (!mem.visible) {
-    classNames.push("hidden");
-  } else {
-    classNames.push("neutral");
-  }
-
-  return classNames.join(" ");
 }
 
 export default Memory;
